@@ -1,13 +1,16 @@
 import 'dart:io';
-//import 'dart:js';
-//import 'package:js/js.dart';
-import 'package:driver_app/authentication/login_screen.dart';
-import 'package:driver_app/pages/dashboard.dart';
-import 'package:driver_app/pages/home_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
+import 'package:third_project/appInfo/app_info.dart';
+import 'package:third_project/authentication/login_screen.dart';
+import 'package:third_project/authentication/signup_screen.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:third_project/pages/home_page.dart';
+//import 'package:com.asmita.thirdproject.MainActivity.dart';
+
+
 
 Future<void> main() async
 {
@@ -16,7 +19,7 @@ Future<void> main() async
   await Firebase.initializeApp(
     options: const FirebaseOptions(
       apiKey: "AIzaSyCbJ-P-nFNdCYZ4IFhH4Cp2ptnNQeWRAs4",
-      appId: "1:340717826978:android:f9f4d25e55f95a1c2538fb",
+      appId: "1:340717826978:android:7e98f4cb6e1d7c5f2538fb",
       messagingSenderId: "340717826978",
       projectId: "flutter-minor-project-1bf61",
     ),
@@ -31,14 +34,6 @@ Future<void> main() async
       }
   });
 
-  await Permission.notification.isDenied.then((valueOfPermission)
-  {
-    if(valueOfPermission)
-    {
-      Permission.notification.request();
-    }
-  });
-
 
   runApp(const MyApp());
 }
@@ -51,13 +46,16 @@ class MyApp extends StatelessWidget
   @override
   Widget build(BuildContext context)
   {
-    return MaterialApp(
-      title: 'Drivers App',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: Colors.black,
+    return ChangeNotifierProvider(
+      create: (context) => AppInfo(),
+      child: MaterialApp(
+        title: 'Flutter User App',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData.dark().copyWith(
+          scaffoldBackgroundColor: Colors.black,
+        ),
+        home: FirebaseAuth.instance.currentUser == null ? LoginScreen() : HomePage(),
       ),
-      home: FirebaseAuth.instance.currentUser == null ? LoginScreen() : Dashboard(),//If the driver is not logged in then only take the subject to login page or else take the subject to homepage
     );
   }
 }

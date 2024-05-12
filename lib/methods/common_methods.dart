@@ -1,26 +1,28 @@
-//import'package:connectivity_plus/connectivity_plus.dart';
 import 'dart:convert';
 
-import 'package:driver_app/global/global_var.dart';
-import 'package:driver_app/models/direction_details.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_geofire/flutter_geofire.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:provider/provider.dart';
+import 'package:third_project/appInfo/app_info.dart';
+import 'package:third_project/global/global_var.dart';
 import 'package:http/http.dart' as http;
+import 'package:third_project/models/address_model.dart';
+import 'package:third_project/models/direction_details.dart';
 
 class CommonMethods
 {
-  // checkConnectivity(BuildContext context) async
-  // {
-  //   var connectionResult = await Connectivity().checkConnectivity();
-  //
-  //   if(connectionResult != ConnectivityResult.mobile && connectionResult != ConnectivityResult.wifi)
-  //     {
-  //       if(!context.mounted) return;
-  //       displaySnackBar("Internet Not Available. Check Your Connection.", context);
-  //     }
-  // }
+  checkConnectivity(BuildContext context) async
+  {
+    var connectionResult = await Connectivity().checkConnectivity();
+
+    if(connectionResult != ConnectivityResult.mobile && connectionResult != ConnectivityResult.wifi)
+      {
+        if(!context.mounted) return;
+        displaySnackBar("Internet Not Available. Check Your Connection.", context);
+      }
+  }
 
   displaySnackBar(String messageText, BuildContext context)
   {
@@ -28,28 +30,11 @@ class CommonMethods
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 
-  turnOffLocationUpdatesForHomePage()
-  {
-    positionStreamHomePage!.pause();
-
-    Geofire.removeLocation(FirebaseAuth.instance.currentUser!.uid);
-  }
-
-  turnOnLocationUpdatesForHomePage()
-  {
-    positionStreamHomePage!.resume();
-
-    Geofire.setLocation(
-      FirebaseAuth.instance.currentUser!.uid,
-      driverCurrentPosition!.latitude,
-      driverCurrentPosition!.longitude,
-    );
-  }
-
   static sendRequestToAPI(String apiUrl) async
   {
     http.Response responseFromAPI = await http.get(Uri.parse(apiUrl));
 
+    //checking the status whether we received a successful response from API or not
     try
     {
       if(responseFromAPI.statusCode == 200)
@@ -69,6 +54,30 @@ class CommonMethods
     }
   }
 
+  ///Reverse GeoCoding -- Converts latitude & longitude into human readable address. (Remember - your current location is in latitude & longitude)
+  static Future<String> convertGeoGraphicCoOrdinatesIntoHumanReadableAddress(Position position, BuildContext context) async//Position will give you latitute and longitude
+  {
+    String humanReadableAddress = "";
+    String apiGeoCodingUrl = "https://maps.googleapis.com/maps/api/geocode/json?latlng=${position.latitude},${position.longitude}&key=$googleMapKey";
+
+    var responseFromAPI = await sendRequestToAPI(apiGeoCodingUrl);
+
+    if(responseFromAPI != "error")
+    {
+      humanReadableAddress = responseFromAPI["results"][0]["formatted_address"];//formatted address gives you the entire address, with street no./route/etc.
+      // print("humanReadableAddress = " + humanReadableAddress);
+      AddressModel model = AddressModel();
+      model.humanReadableAddress = humanReadableAddress;
+      model.placeName = humanReadableAddress;
+      model.longitudePosition = position.longitude;
+      model.latitudePosition = position.latitude;
+
+      Provider.of<AppInfo>(context, listen: false).updatePickUpLocation(model);//Accessing the user pickup location; model is passed to pass the latitude and longitude
+    }
+
+    return humanReadableAddress;
+  }
+
   ///Directions API
   static Future<DirectionDetails?> getDirectionDetailsFromAPI(LatLng source, LatLng destination) async
   {
@@ -85,10 +94,8 @@ class CommonMethods
 
     detailsModel.distanceTextString = responseFromDirectionsAPI["routes"][0]["legs"][0]["distance"]["text"];
     detailsModel.distanceValueDigits = responseFromDirectionsAPI["routes"][0]["legs"][0]["distance"]["value"];
-
     detailsModel.durationTextString = responseFromDirectionsAPI["routes"][0]["legs"][0]["duration"]["text"];
     detailsModel.durationValueDigits = responseFromDirectionsAPI["routes"][0]["legs"][0]["duration"]["value"];
-
     detailsModel.encodedPoints = responseFromDirectionsAPI["routes"][0]["overview_polyline"]["points"];
 
     return detailsModel;
@@ -96,7 +103,7 @@ class CommonMethods
 
   calculateFareAmount(DirectionDetails directionDetails)
   {
-    double distancePerKmAmount = 0.4;
+    double distancePerKmAmount = 4;
     double durationPerMinuteAmount = 0.3;
     double baseFareAmount = 2;
 
@@ -105,7 +112,6 @@ class CommonMethods
 
     double overAllTotalFareAmount = baseFareAmount + totalDistanceTravelFareAmount + totalDurationSpendFareAmount;
 
-    return overAllTotalFareAmount.toStringAsFixed(1);
+    return overAllTotalFareAmount.toStringAsFixed(1);//Rounding off the digits after decimal to one digit. eg: 2.1998 -> 2.2
   }
-
 }

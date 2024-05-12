@@ -1,10 +1,13 @@
-import 'package:driver_app/authentication/signup_screen.dart';
-import 'package:driver_app/methods/common_methods.dart';
-import 'package:driver_app/pages/dashboard.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
- import 'package:driver_app/widgets/loading_dialog.dart';
+import 'package:third_project/authentication/signup_screen.dart';
+import 'package:third_project/global/global_var.dart';
+import 'package:third_project/global/trip_var.dart';
+import 'package:third_project/methods/common_methods.dart';
+import 'package:third_project/pages/home_page.dart';
+import 'package:third_project/pages/search_destination_page.dart';
+import 'package:third_project/widgets/loading_dialog.dart';
 
 class LoginScreen extends StatefulWidget
 {
@@ -22,8 +25,8 @@ class _LoginScreenState extends State<LoginScreen>
 
   checkIfNetworkIsAvailable()
   {
-  //   cMethods.checkConnectivity(context);
-  //
+    cMethods.checkConnectivity(context);
+
     signInFormValidation();
   }
 
@@ -68,15 +71,16 @@ class _LoginScreenState extends State<LoginScreen>
 
     if(userFirebase != null)
       {
-        DatabaseReference usersRef = FirebaseDatabase.instance.ref().child("drivers").child(userFirebase!.uid);
+        DatabaseReference usersRef = FirebaseDatabase.instance.ref().child("users").child(userFirebase!.uid);
         usersRef.once().then((snap)
         {
-          if(snap.snapshot.value != null) //this means that the driver's record exist
+          if(snap.snapshot.value != null) //this means that the user's record exist
           {
             if ((snap.snapshot.value as Map)["blockStatus"] =="no")
             {
-              //userName = (snap.snapshot.value as Map)["name"];
-              Navigator.push(context, MaterialPageRoute(builder: (c)=> Dashboard()));
+              userName = (snap.snapshot.value as Map)["name"];
+              phoneNumberDriver = (snap.snapshot.value as Map)["phone"];
+              Navigator.push(context, MaterialPageRoute(builder: (c)=> HomePage()));
             }
             else
             {
@@ -87,36 +91,60 @@ class _LoginScreenState extends State<LoginScreen>
           else
             {
               FirebaseAuth.instance.signOut();
-              cMethods.displaySnackBar("Your record does not exist as an driver.",context);
+              cMethods.displaySnackBar("Your record does not exist as an user.",context);
             }
         });
       }
   }
 
+
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-        body: SingleChildScrollView(
-          child: Padding(
+  Widget build(BuildContext context)
+  {
+    return Scaffold
+      (
+        body: SingleChildScrollView
+      (
+          child:Column
+          (
+            children:
+          [
+            const SizedBox(height: 60,),
+
+            Container
+          (
+            color: Colors.red,
+            child: ElevatedButton
+              (
+              onPressed: ()
+              {
+                var responseFromSearchPage = Navigator.push(context, MaterialPageRoute(builder: (c)=> SearchDestinationPage()));
+              },
+              style: ElevatedButton.styleFrom
+                (
+                backgroundColor: Colors.red,
+                //: Colors.white,
+                //padding: const EdgeInsets.symmetric(60 , 12.5),
+                padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 12)
+              ),
+              child: const Text(
+                'SOS',
+                style: TextStyle(fontSize: 18),
+              ),
+            ),
+          ),
+
+          Padding(
             padding: const EdgeInsets.all(10),
             child: Column(
               children: [
 
-                const SizedBox(
-                  height: 60,
-                ),
-
                 Image.asset(
-                    "assests/images/ambulance.png",
-                     width: 220,
-                ),
-
-                const SizedBox(
-                  height: 40,
+                    "assests/Images/ambulance.png"
                 ),
 
                 const Text(
-                  "Login as a Driver",
+                  "Login as a User",
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
@@ -132,7 +160,7 @@ class _LoginScreenState extends State<LoginScreen>
                         controller: emailTextEditingController,
                         keyboardType: TextInputType.emailAddress,
                         decoration: const InputDecoration(
-                          labelText: "Driver Email",
+                          labelText: "User Email",
                           labelStyle: TextStyle(
                             fontSize: 14,
                           ),
@@ -207,7 +235,10 @@ class _LoginScreenState extends State<LoginScreen>
               ],
             ),
           ),
-        )
+        ],
+          ),
+
+    )
     );
   }
 }

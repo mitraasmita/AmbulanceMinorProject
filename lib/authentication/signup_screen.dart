@@ -1,14 +1,10 @@
-import 'package:driver_app/authentication/login_screen.dart';
-import 'package:driver_app/methods/common_methods.dart';
-import 'package:driver_app/pages/dashboard.dart';
-import 'package:driver_app/widgets/loading_dialog.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:third_project/authentication/login_screen.dart';
+import 'package:third_project/methods/common_methods.dart';
+import 'package:third_project/pages/home_page.dart';
+import 'package:third_project/widgets/loading_dialog.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:io';
 
 class  SignUpScreen extends StatefulWidget
 {
@@ -24,26 +20,15 @@ class _SignUpScreenState extends State<SignUpScreen>
   TextEditingController phonenumberTextEditingController = TextEditingController();
   TextEditingController emailTextEditingController = TextEditingController();
   TextEditingController passwordTextEditingController = TextEditingController();
-  TextEditingController vehiclenumberTextTextEditEditingController = TextEditingController();
-  //TextEditingController passwordTextEditingController = TextEditingController();
   CommonMethods cMethods = CommonMethods();
-  XFile? imageFile;
-  String urlOfUploadedImage = "";
 
 
   checkIfNetworkIsAvailable()
   {
-  //   cMethods.checkConnectivity(context);
+    cMethods.checkConnectivity(context);
 
-    if(imageFile != null) //image validation
-    {
-      signUpFormValidation();
-    }
-    else
-      {
-        cMethods.displaySnackBar("Please choose an image first.",context);
-      }
-   }
+    signUpFormValidation();
+  }
 
   signUpFormValidation()
   {
@@ -63,33 +48,14 @@ class _SignUpScreenState extends State<SignUpScreen>
     {
       cMethods.displaySnackBar("Your Password must atleast 6 or more characters.", context);
     }
-    else if(vehiclenumberTextTextEditEditingController.text.isEmpty)
-    {
-      cMethods.displaySnackBar("Your enter the vehicle number.", context);
-    }
     else
       {
-        uploadImageToStorage(); // we'll first move the image to storage after validating that all the credentials are filled.
+        //register the user
+        registerNewUser();
       }
   }
 
-  uploadImageToStorage() async
-  {
-    String imageIDName = DateTime.now().millisecondsSinceEpoch.toString();
-    Reference referenceImage = FirebaseStorage.instance.ref().child("Images").child(imageIDName);
-
-    UploadTask uploadTask = referenceImage.putFile(File(imageFile!.path));
-    TaskSnapshot snapshot = await uploadTask;
-    urlOfUploadedImage = await snapshot.ref.getDownloadURL();
-
-    setState((){
-      urlOfUploadedImage;
-    });
-
-    registerNewDriver();//register the user
-  }
-
-  registerNewDriver() async
+  registerNewUser() async
   {
     showDialog(
       context: context,
@@ -111,38 +77,18 @@ class _SignUpScreenState extends State<SignUpScreen>
     if(!context.mounted) return;
     Navigator.pop(context);
 
-    DatabaseReference usersRef = FirebaseDatabase.instance.ref().child("drivers").child(userFirebase!.uid);
-
-    Map driverCarInfo =
+    DatabaseReference usersRef = FirebaseDatabase.instance.ref().child("users").child(userFirebase!.uid);
+    Map userDataMap =
     {
-      "vehicleNumber": vehiclenumberTextTextEditEditingController.text.trim(),
-    };
-
-    Map driverDataMap =
-    {
-      "photo": urlOfUploadedImage,
-      "car_details": driverCarInfo,
       "name": usernameTextEditingController.text.trim(),
       "email": emailTextEditingController.text.trim(),
       "phone": phonenumberTextEditingController.text.trim(),
       "id": userFirebase.uid,
       "blockStatus": "no", //no means the account is approved
     };
-    usersRef.set(driverDataMap);
+    usersRef.set(userDataMap);
 
-    Navigator.push(context, MaterialPageRoute(builder: (c)=> Dashboard()));
-  }
-
-  chooseImageFromGallery() async
-  {
-    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
-
-    if(pickedFile != null)
-      {
-        setState((){
-          imageFile = pickedFile;
-        });
-      }
+    Navigator.push(context, MaterialPageRoute(builder: (c)=> HomePage()));
   }
 
   @override
@@ -157,46 +103,15 @@ class _SignUpScreenState extends State<SignUpScreen>
           child: Column(
             children: [
 
-              const SizedBox(
-                height: 40,
-              ),
+           Image.asset(
+          "assests/Images/ambulance.png"
+        ),
 
-              imageFile == null ?
-              const CircleAvatar(
-              radius: 86,
-              backgroundImage: AssetImage("assests/images/avatarman.png"),
-            ) : Container(
-                width: 180,
-                height: 180,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.grey,
-                  image: DecorationImage(
-                    fit: BoxFit.fitHeight,
-                    image: FileImage(
-                      File(
-                      imageFile!.path,
-                      ),
-                    )
-                  )
-                ),
-              ),
-
-              const SizedBox(
-                height: 40,
-              ),
-
-              GestureDetector(
-                onTap: ()
-                {
-                  chooseImageFromGallery();
-                },
-                child: const Text(
-                  "Select Image",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+             const Text(
+                "Create a User's Account",
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
               //text fields + Sign In button
@@ -209,7 +124,7 @@ class _SignUpScreenState extends State<SignUpScreen>
                   controller: usernameTextEditingController,
                   keyboardType: TextInputType.text,
                   decoration: const InputDecoration(
-                    labelText: "Driver Name",
+                    labelText: "User Name",
                     labelStyle: TextStyle(
                       fontSize: 14,
                     ),
@@ -235,27 +150,6 @@ class _SignUpScreenState extends State<SignUpScreen>
                           fontSize: 14,
                         ),
                         hintText: "Enter your Phone Number",
-                        hintStyle: TextStyle(
-                          color: Colors.grey,
-                        ),
-                      ),
-                      style: TextStyle(
-                        color: Colors.purple,
-                        fontSize: 15,
-                      ),
-                    ),
-                    const SizedBox(height: 22,),
-
-                    //Text Field for Vehicle Number
-                    TextField(
-                      controller: vehiclenumberTextTextEditEditingController,
-                      keyboardType: TextInputType.text,
-                      decoration: const InputDecoration(
-                        labelText: "Vehicle Number",
-                        labelStyle: TextStyle(
-                          fontSize: 14,
-                        ),
-                        hintText: "Enter your vehicle's number",
                         hintStyle: TextStyle(
                           color: Colors.grey,
                         ),

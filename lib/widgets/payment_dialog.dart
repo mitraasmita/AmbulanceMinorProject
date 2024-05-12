@@ -1,6 +1,6 @@
-import 'package:driver_app/methods/common_methods.dart';
 import 'package:flutter/material.dart';
 import 'package:restart_app/restart_app.dart';
+import 'package:third_project/methods/common_methods.dart';
 
 class PaymentDialog extends StatefulWidget
 {
@@ -39,7 +39,7 @@ class _PaymentDialogState extends State<PaymentDialog>
             const SizedBox(height: 21,),
 
             const Text(
-              "COLLECT CASH",
+              "PAY CASH",
               style: TextStyle(
                 color: Colors.grey,
               ),
@@ -69,7 +69,7 @@ class _PaymentDialogState extends State<PaymentDialog>
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
-                "This is fare amount ( Rs. ${widget.fareAmount} ) to be charged from the user.",
+                "This is fare amount ( Rs. ${widget.fareAmount} ) you have to pay to the driver.",
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                     color: Colors.grey
@@ -82,17 +82,14 @@ class _PaymentDialogState extends State<PaymentDialog>
             ElevatedButton(
               onPressed: ()
               {
-                Navigator.pop(context);//disappear this dialog box
-                Navigator.pop(context);//going back to the homepage
-                cMethods.turnOnLocationUpdatesForHomePage();
+                Navigator.pop(context, "paid");//disappear this dialog box
 
-                Restart.restartApp();
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
               ),
               child: const Text(
-                "COLLECT CASH",
+                "PAY CASH",
               ),
             ),
 
